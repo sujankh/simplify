@@ -14,30 +14,11 @@
 
 (define handleBinaryExpression
   (lambda (exp)
-    (let ((op (car exp)) (lhs (getlhs exp)) (rhs (getrhs exp)))
+    (let ((op (car exp)) (lhs (simplify (getlhs exp))) (rhs (simplify (getrhs exp))))
       (cond
        ((and (number? lhs) (number? rhs)) (reduce op lhs rhs)) ;1, 3, 5
-       ((and (isTerm lhs) (number? rhs)) (swapNumberTerm op (simplify lhs) rhs)) ;2, 4, 6
-       ((and (list? rhs))
-	(let ((rhsOp (car rhs)))
-	  (case op
-	    ('+
-	     (if (eq? '+ rhsOp) (applyRule rule7 lhs rhs))
-	     )
-	    ('*
-	     (cond
-	      ((eq? '* rhsOp) (applyRule rule8 lhs rhs))
-	      ((eq? '+ rhsOp)
-	      (if
-		(and (number? lhs) (number? (getlhs rhs)))
-	         (applyRule rule12 lhs rhs)
-		 )
-	      )
-	      )
-	     )
-	    )
-	  )
-	)
+       ((and (isTerm lhs) (number? rhs)) (swapNumberTerm op lhs rhs)) ;2, 4, 6
+       ((matchRule78 op lhs rhs) (rule78 op lhs rhs))
        (else
 	(let ((s1 (simplify lhs)) (s2 (simplify rhs)))
 	  (if (and (equal? s1 lhs) (equal? s2 rhs))
@@ -47,18 +28,15 @@
 	  )))       
       )))
       
-  (define rule7
-    (lambda (t1 rhs)
-      (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
-	(simplify (list '+ (list '+ t1 t2) t3))
-	)
-      )
-)
+(define matchRule78
+  (lambda (op lhs rhs)
+    (and (isTerm lhs) (list? rhs) (eq? op (car rhs)) (or (eq? op '+) (eq? op '*)))
+  ))
 
-(define rule8
-  (lambda (t1 rhs)
+(define rule78
+  (lambda (op t1 rhs)
     (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
-      (simplify (list '* (list '* t1 t2) t3))
+      (simplify (list op (list op t1 t2) t3))
       )
     )
   )
@@ -104,7 +82,7 @@
 ;;;an expression is a term if it is a variable like x (a symbol)
 (define isTerm
   (lambda (exp)
-    (or (list? exp) (symbol? exp))
+    (or (list? exp) (symbol? exp) (number? exp))
     )
   )
 
