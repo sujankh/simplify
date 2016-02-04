@@ -1,7 +1,7 @@
 (define simplify
   (lambda (exp)
       (cond
-       ((not (list? exp)) exp) ;If it is not a binary expression return it without simplification
+       ((not (list? exp)) exp) ;If it is not a binary expression return it without simplification       
        (else ;Its a binary expression
 	(begin
 	  (display exp)
@@ -14,34 +14,75 @@
 
 (define handleBinaryExpression
   (lambda (exp)
-    (let ((op (car exp)) (e1 (getlhs exp)) (e2 (getrhs exp)))
+    (let ((op (car exp)) (lhs (getlhs exp)) (rhs (getrhs exp)))
       (cond
-       ((eq? op '*) (simplifyMultiplication e1 e2))
-       ((and (isTerm e1) (number? e2)) (swapNumberTerm op e1 e2)) ;2, 4, 6
-       ((and (number? e1) (number? e2)) (reduce op e1 e2)) ;1, 3, 5
+       ((and (number? lhs) (number? rhs)) (reduce op lhs rhs)) ;1, 3, 5
+       ((and (isTerm lhs) (number? rhs)) (swapNumberTerm op (simplify lhs) rhs)) ;2, 4, 6
+       ((and (list? rhs))
+	(let ((rhsOp (car rhs)))
+	  (case op
+	    ('+
+	     (if (eq? '+ rhsOp) (applyRule rule7 lhs rhs))
+	     )
+	    ('*
+	     (cond
+	      ((eq? '* rhsOp) (applyRule rule8 lhs rhs))
+	      ((eq? '+ rhsOp)
+	      (if
+		(and (number? lhs) (number? (getlhs rhs)))
+	         (applyRule rule12 lhs rhs)
+		 )
+	      )
+	      )
+	     )
+	    )
+	  )
+	)
        (else
-	(let ((s1 (simplify e1)) (s2 (simplify e2)))
-	  (simplify (list op s1 s2))
-	  )	      
-       )
+	(let ((s1 (simplify lhs)) (s2 (simplify rhs)))
+	  (if (and (equal? s1 lhs) (equal? s2 rhs))
+	      (list op s1 s2) ;if the values do not change do not simplify
+	      (simplify (list op s1 s2))
+	      )
+	  )))       
+      )))
+      
+  (define rule7
+    (lambda (t1 rhs)
+      (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
+	(simplify (list '+ (list '+ t1 t2) t3))
+	)
+      )
+)
+
+(define rule8
+  (lambda (t1 rhs)
+    (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
+      (simplify (list '* (list '* t1 t2) t3))
       )
     )
+  )
+
+(define rule12
+  (lambda (c1 rhs)
+    (let ((c2 (getlhs rhs)) (t (getrhs rhs)))
+      (simplify (list '+ (list '* c1 c2) (list '* c1 t)))
+      )
     )
   )
-
-(define simplifyMultiplication
-  (lambda (t1 t2)
-    (
-     
-     )
-  )
-
+  
 (define swapNumberTerm
   (lambda (op t c)
     (if (eq? '- op)
 	(list '+ (- 0 c) t)
 	(list op c t)
 	)
+    )
+  )
+
+(define applyRule
+  (lambda (rule lhs rhs)
+    (rule (simplify lhs) (simplify rhs))
     )
   )
 
