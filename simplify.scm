@@ -134,7 +134,7 @@
 
 
 ;;;an expression is a term if it is a list OR
-;;;an expression is a term if it is a variable like x (a symbol)
+;;;an expression is a term if it is a variable like x (a symbol) or a number
 (define isTerm
   (lambda (exp)
     (or (list? exp) (symbol? exp) (number? exp))
