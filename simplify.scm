@@ -3,8 +3,7 @@
       (cond
        ((not (list? exp)) exp) ;If it is not a binary expression return it without simplification       
        (else ;Its a binary expression
-	(begin
-	  (display exp)
+	(begin	 
 	  (handleBinaryExpression exp)
 	  )
 	)
@@ -18,15 +17,20 @@
       (cond
        ((and (number? lhs) (number? rhs)) (reduce op lhs rhs)) ;1, 3, 5
        ((and (isTerm lhs) (number? rhs)) (swapNumberTerm op lhs rhs)) ;2, 4, 6
-       ((matchRule78 op lhs rhs) (rule78 op lhs rhs))
+       ((matchRule78 op lhs rhs) (rule78 op lhs rhs))    
+       ;9, 10 same as 7, 8 after applying 2
+       ;11, 13, 15 same as 12, 14, 16 after applying 2
+       ((matchRule121416 op lhs rhs) (rule121416 op lhs rhs))
+       ((matchRule17 op lhs rhs) (rule17 op lhs rhs))
+       ((matchRule18 op lhs rhs) (rule18 op lhs rhs))
+       ((matchRule19 op lhs rhs) (rule19 op lhs rhs))
+       ((matchRule20 op lhs rhs) (rule20 op lhs rhs))
        (else
-	(let ((s1 (simplify lhs)) (s2 (simplify rhs)))
-	  (if (and (equal? s1 lhs) (equal? s2 rhs))
-	      (list op s1 s2) ;if the values do not change do not simplify
-	      (simplify (list op s1 s2))
-	      )
-	  )))       
-      )))
+;	(let ((s1 (simplify lhs)) (s2 (simplify rhs)))
+;	  (if (and (equal? s1 lhs) (equal? s2 rhs))
+	      (list op lhs rhs) ;if the values do not change do not simplify
+;	      (simplify (list op s1 s2))
+	      )))))
       
 (define matchRule78
   (lambda (op lhs rhs)
@@ -36,31 +40,87 @@
 (define rule78
   (lambda (op t1 rhs)
     (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
-      (simplify (list op (list op t1 t2) t3))
+      (list op (list op t1 t2) t3)
       )
     )
   )
 
-(define rule12
-  (lambda (c1 rhs)
-    (let ((c2 (getlhs rhs)) (t (getrhs rhs)))
-      (simplify (list '+ (list '* c1 c2) (list '* c1 t)))
+(define matchRule121416
+  (lambda (op lhs rhs)
+    (and (eq? op '*) (number? lhs) (list? rhs) (not (eq? op (car rhs))))
+    )
+  )
+
+(define rule121416
+  (lambda (op c rhs)
+    (let ((op1 (car rhs)) (c2t2 (getlhs rhs)) (c3t3 (getrhs rhs)))
+      (list op1 (list op c c2t2) (list op c c3t3))
       )
     )
   )
-  
+
+(define matchRule17
+  (lambda (op lhs rhs)
+    (and (eq? op '*) (list? lhs) (eq? (car lhs) '+) (isTerm rhs))
+    )
+  )
+
+(define rule17
+  (lambda (op lhs t3)
+    (let ((t1 (getlhs lhs)) (t2 (getrhs lhs)))
+      '(+ (* t1 t3) (* t2 t3))
+    )
+    )
+  )
+
+(define matchRule18
+  (lambda (op lhs rhs)
+    (and (eq? op '*) (list? rhs) (eq? '+ (car rhs)))
+    )
+  )
+
+(define rule18
+  (lambda (op t1 rhs)
+    (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
+      '(+ (* t1 t2) (* t1 t3))
+    )
+    )
+  )
+
+(define matchRule19
+  (lambda (op lhs rhs)
+    (and (eq? '* op) (list? lhs) (eq? (car lhs) '-))
+    )
+  )
+
+(define rule19
+  (lambda (op lhs t3)
+    (let ((t1 (getlhs lhs)) (t2 (getrhs lhs)))
+      '(- (* t1 t3) (* t2 t3))
+    )
+    )
+  )
+
+(define matchRule20
+  (lambda (op lhs rhs)
+    (and (eq? '* op) (list? rhs) (eq? (car rhs) '-))
+    )
+  )
+
+(define rule20
+  (lambda (op t1 rhs)
+    (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
+      '(- (* t1 t2) (* t1 t3))
+    )
+    )
+  )
+
 (define swapNumberTerm
   (lambda (op t c)
     (if (eq? '- op)
 	(list '+ (- 0 c) t)
 	(list op c t)
 	)
-    )
-  )
-
-(define applyRule
-  (lambda (rule lhs rhs)
-    (rule (simplify lhs) (simplify rhs))
     )
   )
 
