@@ -3,12 +3,12 @@
       (cond
        ((not (list? exp)) exp) ;If it is not a binary expression return it without simplification       
        (else ;Its a binary expression
-	(begin	 
-	  (handleBinaryExpression exp)
+	(let ((s (handleBinaryExpression exp)))
+	  (if (equal? s exp) exp (simplify s)) ;run until a fixed point is reached 
 	  )
 	)
       )
-    )
+      )
   )
 
 (define handleBinaryExpression
@@ -26,11 +26,8 @@
        ((matchRule19 op lhs rhs) (rule19 op lhs rhs))
        ((matchRule20 op lhs rhs) (rule20 op lhs rhs))
        (else
-;	(let ((s1 (simplify lhs)) (s2 (simplify rhs)))
-;	  (if (and (equal? s1 lhs) (equal? s2 rhs))
-	      (list op lhs rhs) ;if the values do not change do not simplify
-;	      (simplify (list op s1 s2))
-	      )))))
+	(list op lhs rhs) 
+	)))))
       
 (define matchRule78
   (lambda (op lhs rhs)
@@ -68,10 +65,9 @@
 (define rule17
   (lambda (op lhs t3)
     (let ((t1 (getlhs lhs)) (t2 (getrhs lhs)))
-      '(+ (* t1 t3) (* t2 t3))
+      (list '+ (list '* t1 t3) (list '* t2 t3)))
     )
     )
-  )
 
 (define matchRule18
   (lambda (op lhs rhs)
@@ -82,7 +78,7 @@
 (define rule18
   (lambda (op t1 rhs)
     (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
-      '(+ (* t1 t2) (* t1 t3))
+      (list '+ (list '* t1 t2) (list '* t1 t3))
     )
     )
   )
@@ -96,7 +92,7 @@
 (define rule19
   (lambda (op lhs t3)
     (let ((t1 (getlhs lhs)) (t2 (getrhs lhs)))
-      '(- (* t1 t3) (* t2 t3))
+      (list '- (list '* t1 t3) (list '* t2 t3))
     )
     )
   )
@@ -110,7 +106,7 @@
 (define rule20
   (lambda (op t1 rhs)
     (let ((t2 (getlhs rhs)) (t3 (getrhs rhs)))
-      '(- (* t1 t2) (* t1 t3))
+      (list '- (list '* t1 t2) (list '* t1 t3))
     )
     )
   )
@@ -127,7 +123,6 @@
 (define reduce
   (lambda (op n1 n2)
     (begin
-      (display op)
       (case op
 	('+ (+ n1 n2))
 	('- (- n1 n2))
